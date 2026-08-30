@@ -11,13 +11,13 @@ const BACKGROUND_FILES = {
 } as const satisfies Readonly<Record<LevelId, string>>;
 
 export const COMMON_SPRITE_FILES = {
-  destination: "destination.webp",
+  postalVan: "postal-van.webp",
+  storm: "obstacle-storm.webp",
   rock: "obstacle-rock.webp",
   rotor: "obstacle-rotor.webp",
-  storm: "obstacle-storm.webp",
   coin: "pickup-coin.webp",
   stamp: "pickup-stamp.webp",
-  postalVan: "postal-van.webp",
+  destination: "destination.webp",
 } as const;
 
 export type CommonSpriteKey = keyof typeof COMMON_SPRITE_FILES;

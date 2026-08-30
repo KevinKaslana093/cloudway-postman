@@ -1,5 +1,6 @@
 import "./style.css";
 
+import { artAssets } from "./art-assets";
 import { gameAudio, type SoundEffect } from "./audio";
 import { LEVELS, UPGRADES } from "./content";
 import { createGame, type CloudwayGame } from "./game-core";
@@ -151,6 +152,10 @@ let preferences = loadUiPreferences(save.settings);
 let currentView: AppView = "title";
 let settingsReturnView: Exclude<AppView, "settings"> = "title";
 let selectedLevelId: LevelId = getNextPlayableLevel(save);
+// Start the playable art set while the player is still on the title/town
+// screens. On slower public connections this makes the first game frame final,
+// rather than briefly showing the procedural safety artwork.
+void artAssets.preloadLevel(selectedLevelId);
 let rosterFilter: RosterFilter = "all";
 let modalOpen = false;
 let game: CloudwayGame | null = null;
@@ -245,6 +250,9 @@ function renderCurrentView(): void {
   stopGameLoopIfNeeded();
   modalOpen = false;
   const level = getLevel(selectedLevelId);
+  if (currentView === "contract" || currentView === "game") {
+    void artAssets.preloadLevel(selectedLevelId);
+  }
   switch (currentView) {
     case "title":
       app.innerHTML = renderTitleView({
