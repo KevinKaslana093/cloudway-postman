@@ -55,6 +55,8 @@ export class GameRenderer {
   private reducedMotion = false;
   private quality: "low" | "medium" | "high" = "high";
   private lastTimestamp = performance.now();
+  private readonly requestedArtLevels = new Set<GameSnapshot["level"]["id"]>();
+  private artSweepStarted = false;
 
   private readonly handleSurfaceResize = (): void => {
     this.resize();
@@ -78,9 +80,6 @@ export class GameRenderer {
     window.addEventListener("orientationchange", this.handleSurfaceResize, { passive: true });
     window.visualViewport?.addEventListener("resize", this.handleSurfaceResize, { passive: true });
     document.addEventListener("visibilitychange", this.handleVisibilityChange);
-    // Art failures are intentionally non-fatal: every object below retains a
-    // procedural fallback so a slow connection never blocks the game loop.
-    void artAssets.preload();
     this.resize();
   }
 
@@ -152,6 +151,7 @@ export class GameRenderer {
   }
 
   render(snapshot: GameSnapshot): void {
+    this.requestArtForLevel(snapshot.level.id);
     const now = performance.now();
     const dt = Math.min(0.05, Math.max(0, (now - this.lastTimestamp) / 1000));
     this.lastTimestamp = now;
@@ -189,6 +189,26 @@ export class GameRenderer {
       0,
       0,
     );
+  }
+
+  private requestArtForLevel(levelId: GameSnapshot["level"]["id"]): void {
+    if (this.requestedArtLevels.has(levelId)) return;
+    this.requestedArtLevels.add(levelId);
+
+    // Load what can affect the current frame first. The other four large
+    // backgrounds wait until this playable set has settled, avoiding a flash
+    // of placeholder vehicle art on real GitHub Pages connections.
+    void artAssets.preload({
+      levels: [levelId],
+      common: ["postalVan", "storm", "rock", "rotor", "coin", "stamp", "destination"],
+    }).then(() => {
+      if (this.artSweepStarted) return;
+      this.artSweepStarted = true;
+      const remainingLevels = ([1, 2, 3, 4, 5] as const).filter(
+        (candidate) => candidate !== levelId,
+      );
+      void artAssets.preload({ levels: remainingLevels, common: [] });
+    });
   }
 
   private drawSky(snapshot: GameSnapshot): void {
