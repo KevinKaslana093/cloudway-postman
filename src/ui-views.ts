@@ -1,3 +1,10 @@
+import {
+  branchArtUrl,
+  characterArtUrl,
+  levelPreviewArtUrl,
+  uiArtUrl,
+} from "./ui-art-assets";
+
 /**
  * UI-only HTML templates for Cloudway Postman.
  *
@@ -124,6 +131,7 @@ export interface ContractGoalModel {
 
 export interface ContractViewModel {
   resources?: ResourceBarModel;
+  levelId?: string | number;
   stageLabel?: string;
   title?: string;
   subtitle?: string;
@@ -221,6 +229,7 @@ export interface ModalViewModel {
   eyebrow?: string;
   title: string;
   body?: string;
+  artSrc?: string;
   icon?: UiIconName;
   stats?: readonly { label: string; value: string; icon?: UiIconName }[];
   actions?: readonly ModalActionModel[];
@@ -399,6 +408,7 @@ export function renderTitleView(model: TitleViewModel = {}): string {
   return `
     <main class="screen screen--title" data-view="title">
       <div class="title-sky" aria-hidden="true">
+        <img class="ui-scene-art title-scene-art" src="${uiArtUrl("title")}" alt="" draggable="false" decoding="async">
         <span class="cloud cloud--one"></span><span class="cloud cloud--two"></span><span class="cloud cloud--three"></span>
         <span class="floating-island floating-island--far"></span>
       </div>
@@ -437,7 +447,7 @@ export function renderTownView(model: TownViewModel = {}): string {
   const contract = model.nextContract ?? {};
   return `
     <main class="screen screen--town has-bottom-nav" data-view="town">
-      <div class="screen-sky" aria-hidden="true"><span class="cloud cloud--one"></span><span class="cloud cloud--two"></span></div>
+      <div class="screen-sky" aria-hidden="true"><img class="ui-scene-art town-scene-art" src="${uiArtUrl("town")}" alt="" draggable="false" decoding="async"><span class="cloud cloud--one"></span><span class="cloud cloud--two"></span></div>
       ${renderResourceBar(model.resources)}
       ${settingsButton()}
       <section class="town-heading">
@@ -493,7 +503,7 @@ export function renderMapView(model: MapViewModel = {}): string {
   const selectedStage = stages.find((stage) => selected(model.selectedStageId, stage.id)) ?? stages.find((stage) => stage.current) ?? stages[0];
   return `
     <main class="screen screen--map has-bottom-nav" data-view="map">
-      <div class="screen-sky map-sky" aria-hidden="true"><span class="cloud cloud--one"></span><span class="cloud cloud--two"></span></div>
+      <div class="screen-sky map-sky" aria-hidden="true"><img class="ui-scene-art map-scene-art" src="${uiArtUrl("map")}" alt="" draggable="false" decoding="async"><span class="cloud cloud--one"></span><span class="cloud cloud--two"></span></div>
       ${renderResourceBar(model.resources)}
       ${wingedTitle(model.chapterTitle ?? "晨风航线", `第 ${model.chapter ?? 1} 章`)}
       <section class="route-map" aria-label="关卡地图">
@@ -508,7 +518,7 @@ export function renderMapView(model: MapViewModel = {}): string {
         }).join("")}
       </section>
       ${selectedStage ? `<section class="stage-preview">
-        <div class="stage-preview__art" aria-hidden="true"><span class="preview-island"></span>${icon("route")}</div>
+        <div class="stage-preview__art" aria-hidden="true"><img class="stage-preview__image" src="${levelPreviewArtUrl(selectedStage.id)}" alt="" draggable="false" loading="lazy" decoding="async"><span class="preview-island"></span>${icon("route")}</div>
         <div class="stage-preview__copy"><span>${escapeHtml(selectedStage.label)} · ${escapeHtml(selectedStage.difficulty ?? "普通")}</span><strong>${escapeHtml(selectedStage.title)}</strong>${starRow(selectedStage.stars)}</div>
         ${primaryButton(selectedStage.locked ? "尚未解锁" : "查看合同", "open-contract", { value: String(selectedStage.id), iconName: selectedStage.locked ? "lock" : "arrow", disabled: selectedStage.locked })}
       </section>` : ""}
@@ -533,7 +543,7 @@ export function renderContractView(model: ContractViewModel = {}): string {
       <article class="paper-sheet contract-sheet">
         <div class="contract-stamp" aria-hidden="true">${icon("stamp")}</div>
         <section class="contract-hero">
-          <span class="contract-hero__island" aria-hidden="true">${icon("home")}</span>
+          <span class="contract-hero__island" aria-hidden="true"><img class="contract-hero__image" src="${levelPreviewArtUrl(model.levelId)}" alt="" draggable="false" decoding="async">${icon("home")}</span>
           <div><span>${escapeHtml(model.difficulty ?? "入门合同")}</span><h2>${escapeHtml(model.title ?? "晨风第一投")}</h2><p>${escapeHtml(model.subtitle ?? "绕过风暴云，把早餐信准时送到灯塔。")}</p></div>
         </section>
         <dl class="contract-meta">
@@ -587,16 +597,16 @@ export function renderRosterView(model: RosterViewModel = {}): string {
   const visibleCharacters = characters.filter((character) => activeFilter === "all" || character.role === activeFilter);
   return `
     <main class="screen screen--roster has-bottom-nav" data-view="characters">
-      <div class="screen-sky" aria-hidden="true"><span class="cloud cloud--one"></span></div>
+      <div class="screen-sky" aria-hidden="true"><img class="ui-scene-art ambient-scene-art" src="${uiArtUrl("title")}" alt="" draggable="false" loading="lazy" decoding="async"><span class="cloud cloud--one"></span></div>
       ${renderResourceBar(model.resources)}
       ${wingedTitle("伙伴名册", "选择本次配送邮差")}
       <div class="filter-chips" role="group" aria-label="角色筛选">
         ${filters.map((filter) => `<button type="button" class="filter-chip ${activeFilter === filter.id ? "is-active" : ""}" data-action="filter-roster" data-value="${filter.id}">${filter.label}</button>`).join("")}
       </div>
       <section class="roster-grid" aria-label="邮差角色">
-        ${visibleCharacters.map((character, index) => `
+        ${visibleCharacters.map((character) => `
           <article class="character-card role-${character.role}${character.selected ? " is-selected" : ""}${character.locked ? " is-locked" : ""}">
-            <div class="character-card__portrait portrait-${(index % 4) + 1}" aria-hidden="true"><span class="portrait-hat">${icon("mail")}</span><span class="portrait-face"></span></div>
+            <div class="character-card__portrait" aria-hidden="true"><img class="character-card__image" src="${characterArtUrl(character.id, character.role)}" alt="" draggable="false" loading="lazy" decoding="async"><span class="portrait-hat">${icon("mail")}</span><span class="portrait-face"></span></div>
             ${character.selected ? `<span class="selected-badge">${icon("check")}</span>` : ""}
             ${character.locked ? `<span class="locked-overlay">${icon("lock")}<small>${escapeHtml(character.unlockHint ?? "尚未解锁")}</small></span>` : ""}
             <div class="character-card__copy"><span>${escapeHtml(character.roleLabel ?? roleLabel(character.role))} · Lv.${escapeHtml(character.level ?? 1)}</span><h2>${escapeHtml(character.name)}</h2><p>${escapeHtml(character.perk ?? "可靠的云路伙伴")}</p></div>
@@ -618,17 +628,17 @@ export function renderCompanyView(model: CompanyViewModel = {}): string {
   const companyLevel = model.companyLevel ?? 1;
   return `
     <main class="screen screen--company has-bottom-nav" data-view="company">
-      <div class="screen-sky" aria-hidden="true"><span class="cloud cloud--one"></span></div>
+      <div class="screen-sky" aria-hidden="true"><img class="ui-scene-art ambient-scene-art" src="${uiArtUrl("town")}" alt="" draggable="false" loading="lazy" decoding="async"><span class="cloud cloud--one"></span></div>
       ${renderResourceBar(model.resources)}
       ${wingedTitle(model.companyName ?? "云路邮政公司", "经营成长")}
       <section class="company-emblem">
-        <div>${icon("mail")}</div><span>公司等级</span><strong>${escapeHtml(companyLevel)}</strong>
+        <div><img class="company-emblem__image" src="${uiArtUrl("companyEmblem")}" alt="" aria-hidden="true" draggable="false" decoding="async">${icon("mail")}</div><span>公司等级</span><strong>${escapeHtml(companyLevel)}</strong>
         <p>升级部门，让每次配送都带回新的可能。</p>
       </section>
       <section class="company-branches" aria-label="公司部门">
         ${branches.map((branch) => `
           <article class="branch-card branch-${escapeHtml(branch.id)} ${branch.locked ? "is-locked" : ""}">
-            <div class="branch-card__icon">${icon(branch.icon ?? "company")}</div>
+            <div class="branch-card__icon"><img class="branch-card__image" src="${branchArtUrl(branch.id)}" alt="" aria-hidden="true" draggable="false" loading="lazy" decoding="async">${icon(branch.icon ?? "company")}</div>
             <div class="branch-card__copy"><span>Lv.${escapeHtml(branch.level ?? 0)} / ${escapeHtml(branch.maxLevel ?? 5)}</span><h2>${escapeHtml(branch.name)}</h2><p>${escapeHtml(branch.description)}</p><span class="progress-track"><i style="--progress:${percent(branch.progress ?? 0)}%"></i></span></div>
             <button type="button" class="round-action" data-action="upgrade-branch" data-id="${escapeHtml(branch.id)}" ${branch.locked ? "disabled" : ""} aria-label="${branch.locked ? "尚未解锁" : `升级${escapeHtml(branch.name)}`}">${branch.locked ? icon("lock") : icon("arrow")}</button>
             ${branch.locked ? `<small class="branch-lock">公司等级 ${companyLevel + 1} 解锁</small>` : `<small class="branch-cost">${icon("coin")} ${escapeHtml(branch.cost ?? 0)}</small>`}
@@ -651,7 +661,7 @@ export function renderSettingsView(model: SettingsViewModel = {}): string {
   const frameRate = model.frameRate ?? 60;
   return `
     <main class="screen screen--settings" data-view="settings">
-      <div class="screen-sky" aria-hidden="true"><span class="cloud cloud--one"></span></div>
+      <div class="screen-sky" aria-hidden="true"><img class="ui-scene-art settings-scene-art" src="${uiArtUrl("title")}" alt="" draggable="false" decoding="async"><span class="cloud cloud--one"></span></div>
       ${backButton("close-settings")}
       ${wingedTitle("设置", "让旅途更舒服")}
       <section class="paper-sheet settings-sheet">
@@ -722,8 +732,9 @@ export function renderModal(model: ModalViewModel): string {
   const eyebrow = model.eyebrow ? playerFacingCopy(model.eyebrow) : "";
   return `
     <div class="modal-layer" role="presentation" data-modal-kind="${kind}">
-      <section class="modal-card modal-card--${kind}" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <section class="modal-card modal-card--${kind}${model.artSrc ? " has-art" : ""}" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         ${model.dismissAction ? `<button class="icon-button modal-close" type="button" data-action="${escapeHtml(model.dismissAction)}" aria-label="关闭">${icon("close")}</button>` : ""}
+        ${model.artSrc ? `<div class="modal-card__art" aria-hidden="true"><img src="${escapeHtml(model.artSrc)}" alt="" draggable="false" decoding="async"></div>` : ""}
         <div class="modal-card__icon">${icon(model.icon ?? MODAL_ICONS[kind])}</div>
         ${eyebrow ? `<span class="modal-card__eyebrow">${escapeHtml(eyebrow)}</span>` : ""}
         <h2 id="modal-title">${escapeHtml(title)}</h2>

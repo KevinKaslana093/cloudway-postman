@@ -1,6 +1,11 @@
 import "./style.css";
 
 import { artAssets } from "./art-assets";
+import {
+  buildingArtUrl,
+  preloadUiArtForView,
+  uiArtUrl,
+} from "./ui-art-assets";
 import { gameAudio, type SoundEffect } from "./audio";
 import { LEVELS, UPGRADES } from "./content";
 import { createGame, type CloudwayGame } from "./game-core";
@@ -250,6 +255,7 @@ function renderCurrentView(): void {
   stopGameLoopIfNeeded();
   modalOpen = false;
   const level = getLevel(selectedLevelId);
+  void preloadUiArtForView(currentView);
   if (currentView === "contract" || currentView === "game") {
     void artAssets.preloadLevel(selectedLevelId);
   }
@@ -303,6 +309,7 @@ function renderCurrentView(): void {
     case "contract":
       app.innerHTML = renderContractView({
         resources: resourceModel(),
+        levelId: level.id,
         stageLabel: `航线 1-${level.id}`,
         title: level.title,
         subtitle: level.subtitle,
@@ -894,6 +901,7 @@ async function handleAction(action: string, element: HTMLElement): Promise<void>
         eyebrow: "今日清单",
         title: "两件小事，顺路完成",
         body: "完成 1 次配送；在关卡中收集 1 枚邮票。正式版可接入每日刷新与服务端校验。",
+        artSrc: uiArtUrl("dailyBoard"),
         icon: "check",
         stats: [
           { label: "配送", value: completedLevelCount() > 0 ? "已完成" : "0 / 1", icon: "route" },
@@ -925,6 +933,7 @@ async function handleAction(action: string, element: HTMLElement): Promise<void>
         kind: "reward",
         title: "公司声望正在累积",
         body: "每次通关都会增加经验与声望。试玩版已实现部门成长和实际关卡加成，阶段宝箱将在后续版本开放。",
+        artSrc: uiArtUrl("companyEmblem"),
         icon: "gift",
         actions: [{ action: "close-modal", label: "继续经营", tone: "primary" }],
       });
@@ -1199,6 +1208,7 @@ function openBuilding(buildingId: string | undefined): void {
       kind: "info",
       title: `${building.name} 尚未开放`,
       body: "先完成配送或升级其他建筑，提高公司等级后即可改装邮车。",
+      artSrc: buildingArtUrl(buildingId),
       icon: "lock",
       actions: [{ action: "close-modal", label: "继续经营", tone: "primary" }],
     });
@@ -1212,6 +1222,7 @@ function openBuilding(buildingId: string | undefined): void {
     eyebrow: `${building.name} · Lv.${level}`,
     title: atMaximum ? "建筑已达到最高等级" : "投入本次配送收益继续扩建",
     body: building.description,
+    artSrc: buildingArtUrl(buildingId),
     icon: building.icon,
     stats: [
       { label: "当前金币", value: String(save.coins), icon: "coin" },
