@@ -291,6 +291,27 @@ const percent = (value = 0, maximum = 100): number => {
 const selected = (left: string | number | null | undefined, right: string | number): boolean =>
   left !== null && left !== undefined && String(left) === String(right);
 
+const DAILY_REFRESH_COPY = "完成今日清单，还能为小镇积攒新的声望。";
+
+const PLAYER_FACING_COPY: Readonly<Record<string, string>> = {
+  "正式版可接入每日刷新与服务端校验。": DAILY_REFRESH_COPY,
+  "试玩版不限体力": "云能补给充足",
+  "界面保留体力位，方便以后做恢复、活动或商业化；当前所有关卡都可反复游玩，不会消耗真实资源。":
+    "今日云能补给充足，所有航线都可以自由练习和反复挑战。",
+  "每次通关都会增加经验与声望。试玩版已实现部门成长和实际关卡加成，阶段宝箱将在后续版本开放。":
+    "每次通关都会增加经验与声望，提升部门等级也会强化实际配送能力。",
+  "重新规划路线即可再试；援助券只是未来激励视频接口的本地替代，不会触发真实广告。":
+    "重新规划路线即可再试，也可以使用援助券获得一次护盾援助。",
+  "商业化接口预览": "邮局特别援助",
+  "当前不会播放真实广告，而是消耗 1 张本地援助券完成解锁。未来可把同一按钮替换为 30 秒激励视频，成功回调后再发放角色。":
+    "使用 1 张援助券，即可邀请这位伙伴加入车队并永久出战。",
+  "重置全部本地进度？": "重置全部配送进度？",
+};
+
+const playerFacingCopy = (value: string): string =>
+  PLAYER_FACING_COPY[value] ??
+  value.replace("正式版可接入每日刷新与服务端校验。", DAILY_REFRESH_COPY);
+
 export function icon(name: UiIconName, className = ""): string {
   const safeClass = className ? ` ${escapeHtml(className)}` : "";
   return `<svg class="ui-icon${safeClass}" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICON_CONTENT[name]}</svg>`;
@@ -346,7 +367,7 @@ export function renderResourceBar(model: ResourceBarModel = {}): string {
       <div class="resource-chip resource-chip--gem" title="援助券">
         ${icon("gift")}<strong>${escapeHtml(model.gems ?? 0)}</strong>
       </div>
-      <button class="resource-chip resource-chip--energy" type="button" data-action="open-energy" aria-label="${model.unlimitedEnergy ? "试玩版不限体力" : `体力 ${energy} / ${energyMax}`}">
+      <button class="resource-chip resource-chip--energy" type="button" data-action="open-energy" aria-label="${model.unlimitedEnergy ? "云能充足，无需消耗体力" : `体力 ${energy} / ${energyMax}`}">
         ${icon("heart")}<strong>${model.unlimitedEnergy ? "∞" : escapeHtml(energy)}</strong>${model.unlimitedEnergy ? "" : `<small>/${escapeHtml(energyMax)}</small>`}
       </button>
       ${model.stamps === undefined ? "" : `<div class="resource-chip resource-chip--stamp" title="邮票">${icon("stamp")}<strong>${escapeHtml(model.stamps)}</strong></div>`}
@@ -398,9 +419,9 @@ export function renderTitleView(model: TitleViewModel = {}): string {
       <section class="title-cta" aria-label="开始游戏">
         ${model.canContinue ? primaryButton(continueLabel, "continue-game", { iconName: "play" }) : ""}
         ${primaryButton(model.canContinue ? "重新开始" : "开始配送", "start-game", { iconName: "route", tone: model.canContinue ? "secondary" : undefined })}
-        <p>单指画路 · 每局约 60–90 秒 · 自动保存</p>
+        <p>单指画路 · 每局约 60–90 秒 · 旅程自动记录</p>
       </section>
-      <span class="version-label">${escapeHtml(model.versionLabel ?? "网页版体验")}</span>
+      <span class="version-label">晨风邮局 · 云路常开</span>
     </main>`;
 }
 
@@ -542,7 +563,7 @@ export function renderContractView(model: ContractViewModel = {}): string {
         </section>
       </article>
       <div class="contract-cta">
-        ${primaryButton((model.energyCost ?? 1) === 0 ? "试玩版不限体力 · 开始配送" : `消耗 ${model.energyCost ?? 1} 体力 · 开始配送`, "start-level", { iconName: "energy", disabled: model.canStart === false })}
+        ${primaryButton((model.energyCost ?? 1) === 0 ? "整装出发" : `消耗 ${model.energyCost ?? 1} 体力 · 开始配送`, "start-level", { iconName: "energy", disabled: model.canStart === false })}
         <p>画出云路，邮车会自动沿路线前进</p>
       </div>
     </main>`;
@@ -579,7 +600,7 @@ export function renderRosterView(model: RosterViewModel = {}): string {
             ${character.selected ? `<span class="selected-badge">${icon("check")}</span>` : ""}
             ${character.locked ? `<span class="locked-overlay">${icon("lock")}<small>${escapeHtml(character.unlockHint ?? "尚未解锁")}</small></span>` : ""}
             <div class="character-card__copy"><span>${escapeHtml(character.roleLabel ?? roleLabel(character.role))} · Lv.${escapeHtml(character.level ?? 1)}</span><h2>${escapeHtml(character.name)}</h2><p>${escapeHtml(character.perk ?? "可靠的云路伙伴")}</p></div>
-            ${character.locked ? `<button type="button" class="button button--video" data-action="trial-character" data-id="${escapeHtml(character.id)}">${icon("video")} 援助解锁</button>` : `<button type="button" class="button button--small ${character.selected ? "button--success" : "button--secondary"}" data-action="select-character" data-id="${escapeHtml(character.id)}">${character.selected ? "已出战" : "设为出战"}${character.trialRuns ? ` · 余 ${escapeHtml(character.trialRuns)} 局` : ""}</button>`}
+            ${character.locked ? `<button type="button" class="button button--video" data-action="trial-character" data-id="${escapeHtml(character.id)}">${icon("gift")} 援助解锁</button>` : `<button type="button" class="button button--small ${character.selected ? "button--success" : "button--secondary"}" data-action="select-character" data-id="${escapeHtml(character.id)}">${character.selected ? "已出战" : "设为出战"}${character.trialRuns ? ` · 余 ${escapeHtml(character.trialRuns)} 局` : ""}</button>`}
           </article>`).join("")}
       </section>
       ${renderBottomNav("characters")}
@@ -653,7 +674,7 @@ export function renderSettingsView(model: SettingsViewModel = {}): string {
           </div>
         </div>
       </section>
-      <footer class="settings-footer"><button type="button" class="text-button" data-action="show-how-to-play">操作说明</button><button type="button" class="text-button" data-action="reset-save">重置存档</button><small>设置会自动保存在本机</small></footer>
+      <footer class="settings-footer"><button type="button" class="text-button" data-action="show-how-to-play">操作说明</button><button type="button" class="text-button" data-action="reset-save">重置进度</button><small>偏好已记入邮差手册</small></footer>
     </main>`;
 }
 
@@ -674,8 +695,12 @@ export function renderHud(model: HudViewModel = {}): string {
     <section class="game-hud ${model.paused ? "is-paused" : ""}" aria-label="关卡状态">
       <header class="hud-top">
         <button class="icon-button hud-pause" type="button" data-action="toggle-pause" aria-label="${model.paused ? "继续游戏" : "暂停"}">${icon(model.paused ? "play" : "pause")}</button>
-        <div class="hud-progress"><span>${escapeHtml(model.stageLabel ?? "配送中")}</span><div class="progress-track"><i style="--progress:${percent(model.progress ?? 0)}%"></i></div><strong>${Math.round(percent(model.progress ?? 0))}%</strong></div>
-        <div class="hud-time" aria-label="剩余时间">${icon("speed")}<strong>${formatSeconds(model.remainingSeconds)}</strong></div>
+        <div class="hud-progress">
+          <span>${escapeHtml(model.stageLabel ?? "配送中")}</span>
+          <div class="hud-time" aria-label="剩余时间">${icon("speed")}<strong>${formatSeconds(model.remainingSeconds)}</strong></div>
+          <strong>${Math.round(percent(model.progress ?? 0))}%</strong>
+          <div class="progress-track"><i style="--progress:${percent(model.progress ?? 0)}%"></i></div>
+        </div>
       </header>
       <aside class="hud-status">
         <div class="hud-meter hud-meter--ink"><span>${icon("ink")} 云墨</span><strong>${Math.round(percent(ink, inkMax))}%</strong><div class="vertical-meter"><i style="--progress:${percent(ink, inkMax)}%"></i></div></div>
@@ -686,21 +711,23 @@ export function renderHud(model: HudViewModel = {}): string {
       <button class="ability-button ${ready ? "is-ready" : "is-cooldown"}" type="button" data-action="use-ability" ${ready ? "" : "disabled"} aria-label="${escapeHtml(model.abilityLabel ?? "灯塔护盾")}，${escapeHtml(abilityStatus)}">
         <span>${icon("shield")}</span><strong>${escapeHtml(model.abilityLabel ?? "灯塔")}</strong><em>${escapeHtml(abilityStatus)}</em>
       </button>
-      <div class="draw-hint" aria-hidden="true">${icon("route")}<span>按住并画出云路</span></div>
     </section>`;
 }
 
 export function renderModal(model: ModalViewModel): string {
   const kind = model.kind ?? "info";
   const actions = model.actions ?? [{ action: "close-modal", label: "知道了", tone: "primary" }];
+  const title = playerFacingCopy(model.title);
+  const body = model.body ? playerFacingCopy(model.body) : "";
+  const eyebrow = model.eyebrow ? playerFacingCopy(model.eyebrow) : "";
   return `
     <div class="modal-layer" role="presentation" data-modal-kind="${kind}">
       <section class="modal-card modal-card--${kind}" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         ${model.dismissAction ? `<button class="icon-button modal-close" type="button" data-action="${escapeHtml(model.dismissAction)}" aria-label="关闭">${icon("close")}</button>` : ""}
         <div class="modal-card__icon">${icon(model.icon ?? MODAL_ICONS[kind])}</div>
-        ${model.eyebrow ? `<span class="modal-card__eyebrow">${escapeHtml(model.eyebrow)}</span>` : ""}
-        <h2 id="modal-title">${escapeHtml(model.title)}</h2>
-        ${model.body ? `<p>${escapeHtml(model.body)}</p>` : ""}
+        ${eyebrow ? `<span class="modal-card__eyebrow">${escapeHtml(eyebrow)}</span>` : ""}
+        <h2 id="modal-title">${escapeHtml(title)}</h2>
+        ${body ? `<p>${escapeHtml(body)}</p>` : ""}
         ${model.stats?.length ? `<dl class="modal-stats">${model.stats.map((stat) => `<div><dt>${stat.icon ? icon(stat.icon) : ""}${escapeHtml(stat.label)}</dt><dd>${escapeHtml(stat.value)}</dd></div>`).join("")}</dl>` : ""}
         <div class="modal-actions">
           ${actions.map((action) => `<button class="button button--${escapeHtml(action.tone ?? "secondary")}" type="button" data-action="${escapeHtml(action.action)}"${action.value === undefined ? "" : ` data-value="${escapeHtml(action.value)}"`}${action.disabled ? " disabled" : ""}>${action.tone === "video" ? icon("video") : ""}<span>${escapeHtml(action.label)}</span></button>`).join("")}

@@ -178,7 +178,7 @@ export const LEVELS: readonly LevelConfig[] = [
         ["coin-3-b", 78, 455, 5],
         ["coin-3-c", 305, 275, 6],
       ]),
-      stamp("stamp-3", 92, 185),
+      stamp("stamp-3", 112, 185),
     ],
   },
   {
@@ -238,7 +238,7 @@ export const LEVELS: readonly LevelConfig[] = [
         ["coin-4-b", 78, 495, 6],
         ["coin-4-c", 302, 345, 7],
       ]),
-      stamp("stamp-4", 85, 225),
+      stamp("stamp-4", 108, 225),
     ],
   },
   {
@@ -305,7 +305,7 @@ export const LEVELS: readonly LevelConfig[] = [
         ["coin-5-c", 76, 405, 8],
         ["coin-5-d", 310, 285, 8],
       ]),
-      stamp("stamp-5", 74, 175),
+      stamp("stamp-5", 108, 175),
     ],
   },
 ] as const;
