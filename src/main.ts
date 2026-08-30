@@ -1344,6 +1344,7 @@ function stopGameLoopIfNeeded(): void {
   if (frameRequest) cancelAnimationFrame(frameRequest);
   frameRequest = 0;
   game = null;
+  renderer?.dispose();
   renderer = null;
   snapshot = null;
   drawing = false;

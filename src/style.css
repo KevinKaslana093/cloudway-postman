@@ -1093,6 +1093,14 @@ button.resource-chip {
   touch-action: none;
 }
 
+.screen--game {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  min-height: 0;
+}
+
 .game-stage,
 .canvas-wrap,
 .game-canvas-wrap {
@@ -1108,9 +1116,13 @@ button.resource-chip {
 .game-canvas-wrap canvas,
 .game-canvas,
 #game-canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
+  max-width: none;
+  max-height: none;
   touch-action: none;
 }
 

@@ -14,26 +14,95 @@ interface Particle {
 const WORLD_WIDTH = 390;
 const WORLD_HEIGHT = 844;
 
+export interface CanvasMetrics {
+  backingWidth: number;
+  backingHeight: number;
+  scaleX: number;
+  scaleY: number;
+}
+
+export function calculateCanvasMetrics(
+  cssWidth: number,
+  cssHeight: number,
+  devicePixelRatio: number,
+  maximumRatio: number,
+): CanvasMetrics {
+  const safeWidth = Number.isFinite(cssWidth) && cssWidth > 0 ? cssWidth : WORLD_WIDTH;
+  const safeHeight = Number.isFinite(cssHeight) && cssHeight > 0 ? cssHeight : WORLD_HEIGHT;
+  const safeDeviceRatio =
+    Number.isFinite(devicePixelRatio) && devicePixelRatio > 0 ? devicePixelRatio : 1;
+  const pixelRatio = Math.min(safeDeviceRatio, maximumRatio);
+  const backingWidth = Math.max(1, Math.round(safeWidth * pixelRatio));
+  const backingHeight = Math.max(1, Math.round(safeHeight * pixelRatio));
+
+  return {
+    backingWidth,
+    backingHeight,
+    scaleX: backingWidth / WORLD_WIDTH,
+    scaleY: backingHeight / WORLD_HEIGHT,
+  };
+}
+
 export class GameRenderer {
   private readonly context: CanvasRenderingContext2D;
+  private readonly resizeObserver: ResizeObserver | null;
   private particles: Particle[] = [];
   private reducedMotion = false;
   private quality: "low" | "medium" | "high" = "high";
   private lastTimestamp = performance.now();
 
+  private readonly handleSurfaceResize = (): void => {
+    this.resize();
+  };
+
+  private readonly handleVisibilityChange = (): void => {
+    if (!document.hidden) this.resize();
+  };
+
   constructor(private readonly canvas: HTMLCanvasElement) {
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Canvas 2D is unavailable");
     this.context = context;
+    this.resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(this.handleSurfaceResize);
+    this.resizeObserver?.observe(this.canvas);
+    this.canvas.addEventListener("contextrestored", this.handleSurfaceResize);
+    window.addEventListener("pageshow", this.handleSurfaceResize);
+    window.addEventListener("orientationchange", this.handleSurfaceResize, { passive: true });
+    window.visualViewport?.addEventListener("resize", this.handleSurfaceResize, { passive: true });
+    document.addEventListener("visibilitychange", this.handleVisibilityChange);
     this.resize();
   }
 
   resize(): void {
     const maximumRatio = this.quality === "low" ? 1 : this.quality === "medium" ? 1.5 : 2;
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, maximumRatio);
-    this.canvas.width = Math.round(WORLD_WIDTH * pixelRatio);
-    this.canvas.height = Math.round(WORLD_HEIGHT * pixelRatio);
-    this.context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    const bounds = this.canvas.getBoundingClientRect();
+    const metrics = calculateCanvasMetrics(
+      bounds.width || this.canvas.clientWidth,
+      bounds.height || this.canvas.clientHeight,
+      window.devicePixelRatio || 1,
+      maximumRatio,
+    );
+
+    if (
+      this.canvas.width !== metrics.backingWidth ||
+      this.canvas.height !== metrics.backingHeight
+    ) {
+      this.canvas.width = metrics.backingWidth;
+      this.canvas.height = metrics.backingHeight;
+    }
+    this.applyWorldTransform();
+  }
+
+  dispose(): void {
+    this.resizeObserver?.disconnect();
+    this.canvas.removeEventListener("contextrestored", this.handleSurfaceResize);
+    window.removeEventListener("pageshow", this.handleSurfaceResize);
+    window.removeEventListener("orientationchange", this.handleSurfaceResize);
+    window.visualViewport?.removeEventListener("resize", this.handleSurfaceResize);
+    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
   }
 
   setReducedMotion(value: boolean): void {
@@ -81,8 +150,13 @@ export class GameRenderer {
     this.updateParticles(dt);
 
     const ctx = this.context;
+    // Android WebView/WeChat can preserve the backing store while resetting the
+    // 2D context state. Rebuild the transform every frame so the world never
+    // collapses into the backing store's top-left corner after a surface restore.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.applyWorldTransform();
     ctx.save();
-    ctx.clearRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     this.drawSky(snapshot.elapsedSeconds);
     this.drawFinish(snapshot);
     this.drawRoad(snapshot);
@@ -92,6 +166,17 @@ export class GameRenderer {
     this.drawParticles();
     this.drawEdgeVignette(snapshot);
     ctx.restore();
+  }
+
+  private applyWorldTransform(): void {
+    this.context.setTransform(
+      this.canvas.width / WORLD_WIDTH,
+      0,
+      0,
+      this.canvas.height / WORLD_HEIGHT,
+      0,
+      0,
+    );
   }
 
   private drawSky(time: number): void {
